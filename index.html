@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍱 點餐系統</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>🍱 點餐系統</h1>
+        <div class="top-buttons">
+            <button class="tab active" onclick="showPage('orderPage')">用戶點餐</button>
+            <button class="tab" onclick="openAdminLogin()">維護端</button>
+        </div>
+    </header>
+
+    <!-- ================= 用戶點餐 ================= -->
+    <section id="orderPage" class="page">
+
+        <div class="card">
+            <h2>📋 今日點餐</h2>
+
+            <div id="todayInfo" class="today-info"></div>
+
+            <div class="notice">
+                ⏰ 每日點餐截止時間：
+                <strong id="deadlineText">12:00</strong>
+            </div>
+
+            <div id="closedMessage" class="warning hidden">
+                ⚠️ 今日點餐已截止，將開放下一個工作日預訂。
+            </div>
+
+            <label>座號</label>
+            <select id="seatSelect"></select>
+
+            <label>餐點選擇</label>
+            <select id="mealSelect">
+                <option value="">請先選擇座號</option>
+            </select>
+
+            <div id="existingOrderWarning" class="warning hidden">
+                ⚠️ 您的座號該日已點餐，送出將覆蓋原訂單。
+            </div>
+
+            <button class="primary-btn" onclick="submitOrder()">
+                ✅ 確認送出
+            </button>
+        </div>
+
+    </section>
+
+
+    <!-- ================= 維護端 ================= -->
+    <section id="adminPage" class="page hidden">
+
+        <div class="admin-header">
+            <h2>🔧 維護端</h2>
+            <button class="danger-small" onclick="logoutAdmin()">登出</button>
+        </div>
+
+        <div class="admin-tabs">
+            <button onclick="showAdminSection('menuSection')">🍽️ 菜單管理</button>
+            <button onclick="showAdminSection('orderSection')">📋 訂單查看</button>
+            <button onclick="showAdminSection('settingSection')">⚙️ 設定</button>
+        </div>
+
+
+        <!-- 菜單管理 -->
+        <div id="menuSection" class="admin-section">
+
+            <div class="card">
+                <h2>📤 上傳週菜單</h2>
+
+                <div id="dropZone" class="drop-zone">
+                    <div class="upload-icon">📊</div>
+                    <p>點擊或拖曳上傳 CSV 菜單檔</p>
+                    <small>系統將自動依星期分類匯入所有餐點</small>
+                    <input type="file" id="csvFile" accept=".csv" hidden>
+                </div>
+
+                <div class="csv-help">
+                    <strong>📋 CSV 格式說明</strong>
+                    <pre>星期,餐點名稱,價格
+週一,排骨便當,80
+週一,雞腿便當,90
+週二,魚排便當,75
+週三,控肉飯,70</pre>
+
+                    支援：
+                    <br>
+                    週一～週五、1～5、Monday～Friday
+                </div>
+            </div>
+
+
+            <div class="card">
+
+                <div class="section-title">
+                    <h2>🍽️ 週菜單編輯</h2>
+
+                    <button class="primary-btn small" onclick="openAddMeal()">
+                        ＋ 手動新增
+                    </button>
+                </div>
+
+                <div class="day-tabs">
+                    <button class="day-btn active" onclick="selectDay('週一')">週一</button>
+                    <button class="day-btn" onclick="selectDay('週二')">週二</button>
+                    <button class="day-btn" onclick="selectDay('週三')">週三</button>
+                    <button class="day-btn" onclick="selectDay('週四')">週四</button>
+                    <button class="day-btn" onclick="selectDay('週五')">週五</button>
+                </div>
+
+                <div id="menuList"></div>
+
+                <div class="statistics">
+                    <div>
+                        <strong id="mealCount">0</strong>
+                        <span>所選日餐點數</span>
+                    </div>
+
+                    <div>
+                        <strong id="orderCount">0</strong>
+                        <span>所選日訂單</span>
+                    </div>
+
+                    <div>
+                        <strong>$<span id="revenue">0</span></strong>
+                        <span>所選日營收</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- 訂單查看 -->
+        <div id="orderSection" class="admin-section hidden">
+
+            <div class="card">
+
+                <div class="section-title">
+                    <h2>📋 訂單檢視</h2>
+
+                    <div>
+                        <button onclick="exportCSV()">📥 匯出 CSV</button>
+                        <button onclick="generateReport()">📧 訂單回報</button>
+                    </div>
+                </div>
+
+                <div class="order-day-tabs">
+                    <button onclick="filterOrders('全部')">全部</button>
+                    <button onclick="filterOrders('週一')">週一</button>
+                    <button onclick="filterOrders('週二')">週二</button>
+                    <button onclick="filterOrders('週三')">週三</button>
+                    <button onclick="filterOrders('週四')">週四</button>
+                    <button onclick="filterOrders('週五')">週五</button>
+                </div>
+
+                <div id="orderList"></div>
+
+            </div>
+
+
+            <div class="card">
+                <h2>📊 餐點統計（有誰點）</h2>
+                <div id="mealStatistics"></div>
+            </div>
+
+        </div>
+
+
+        <!-- 設定 -->
+        <div id="settingSection" class="admin-section hidden">
+
+            <div class="card">
+
+                <h2>⚙️ 基本設定</h2>
+
+                <label>座位數量（1 起）</label>
+                <input type="number" id="seatCount" min="1" value="30">
+
+                <label>
+                    每日點餐截止時間
+                </label>
+                <input type="time" id="deadlineInput" value="12:00">
+
+                <hr>
+
+                <h3>🔐 管理密碼</h3>
+
+                <input
+                    type="password"
+                    id="newPassword"
+                    placeholder="輸入新密碼"
+                >
+
+                <button onclick="changePassword()">
+                    更新密碼
+                </button>
+
+                <hr>
+
+                <button class="save-btn" onclick="saveSettings()">
+                    💾 儲存所有設定
+                </button>
+
+                <p id="saveMessage"></p>
+
+            </div>
+
+
+            <div class="card danger-card">
+
+                <h2>🗑️ 資料管理</h2>
+
+                <button onclick="clearSelectedOrders()">
+                    清除所選日訂單
+                </button>
+
+                <button onclick="clearAllMenu()">
+                    清除全週菜單
+                </button>
+
+                <button class="danger-btn" onclick="resetAll()">
+                    ⚠️ 全部重置
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<!-- ================= 登入視窗 ================= -->
+
+<div id="loginModal" class="modal hidden">
+
+    <div class="modal-box">
+
+        <h2>🔐 維護端登入</h2>
+
+        <label>密碼</label>
+
+        <input
+            type="password"
+            id="adminPassword"
+            placeholder="請輸入密碼"
+            onkeydown="if(event.key==='Enter') loginAdmin()"
+        >
+
+        <p id="loginError" class="error"></p>
+
+        <div class="modal-buttons">
+            <button class="primary-btn" onclick="loginAdmin()">
+                登入
+            </button>
+
+            <button onclick="closeLogin()">
+                取消
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= 新增餐點 ================= -->
+
+<div id="mealModal" class="modal hidden">
+
+    <div class="modal-box">
+
+        <h2>➕ 新增餐點</h2>
+
+        <label>餐點名稱</label>
+        <input
+            id="newMealName"
+            placeholder="例：排骨便當"
+        >
+
+        <label>價格（元）</label>
+        <input
+            type="number"
+            id="newMealPrice"
+            placeholder="例：80"
+        >
+
+        <div class="modal-buttons">
+
+            <button
+                class="primary-btn"
+                onclick="addMeal()"
+            >
+                新增
+            </button>
+
+            <button onclick="closeMealModal()">
+                取消
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= 成功視窗 ================= -->
+
+<div id="successModal" class="modal hidden">
+
+    <div class="modal-box success">
+
+        <div class="success-icon">✅</div>
+
+        <h2>訂單送出成功！</h2>
+
+        <p id="successText"></p>
+
+        <button
+            class="primary-btn"
+            onclick="closeSuccess()"
+        >
+            確認
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ================= 回報視窗 ================= -->
+
+<div id="reportModal" class="modal hidden">
+
+    <div class="modal-box report-box">
+
+        <h2>📧 訂單回報</h2>
+
+        <textarea id="reportText" readonly></textarea>
+
+        <div class="modal-buttons">
+
+            <button onclick="copyReport()">
+                📋 複製內容
+            </button>
+
+            <button onclick="closeReport()">
+                關閉
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
